@@ -6,6 +6,7 @@
 #include "src/hash_md5.hpp"
 #include "src/dsa.hpp"
 #include "src/big_integer.hpp"
+#include "src/sha256.hpp"
 
 void test_lfsr(std::string plaintext, std::uint32_t seed_lfsr1 = 0b001, std::uint32_t seed_lfsr2 = 0b11111){
 	clock_controlled_generator generator_enc(seed_lfsr1, seed_lfsr2);
@@ -114,6 +115,16 @@ int test_dsa() {
 	return 0;
 }
 
+void test_sha256(){
+
+    std::cout << "--- SHA256 算法演示 ---\n";
+    bigint::SHA256 sha;
+
+    // 1. 处理字符串
+    std::string hex_res = sha.hash_to_hex("hello world");
+    std::cout << "hello world ->" << " SHA256: " << hex_res << std::endl;
+
+}
 
 using BigInt = bigint::BigInteger;
 
@@ -268,16 +279,17 @@ void test_bigint_dsa_md5() {
 
 int main() {
 
-	BigInt val = bigint::BigIntegerOps::mod_pow(7, 565, 561);
-	std::cout << "7^565 % 561 = " << val.to_string() << "\n\n";
-
-	try {
-		test_bigint_dsa_md5();
-	} catch (const std::exception& e) {
-		std::cerr << "发生异常: " << e.what() << std::endl;
-	}
+//	BigInt val = bigint::BigIntegerOps::mod_pow(7, 565, 561);
+//	std::cout << "7^565 % 561 = " << val.to_string() << "\n\n";
+//
+//	try {
+//		test_bigint_dsa_md5();
+//	} catch (const std::exception& e) {
+//		std::cerr << "发生异常: " << e.what() << std::endl;
+//	}
 
 	// test_dsa();
 	// test_md5();
 	// test_lfsr("162320129-何明迅");
+    test_sha256();
 }
