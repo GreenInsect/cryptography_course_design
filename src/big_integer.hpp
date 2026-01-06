@@ -26,6 +26,7 @@
 #include <compare> // C++20 for operator<=>
 #include <optional>
 #include <limits>
+#include <span>
 
 
 #include "crypt_concept.hpp"
@@ -41,9 +42,9 @@
 namespace bigint {
 
 // 常量定义
-constexpr uint32_t BASE = 256;
-constexpr uint8_t BASE_BITS = 8;
-constexpr std::string_view HEX_CHARS = "0123456789abcdef";
+constexpr inline uint32_t BASE = 256;
+constexpr inline uint8_t BASE_BITS = 8;
+constexpr inline std::string_view HEX_CHARS = "0123456789abcdef";
 
 // 前向声明
 struct DivisionResult;

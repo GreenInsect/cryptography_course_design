@@ -8,6 +8,8 @@
 
 #include <vector>
 #include <cstdint>
+#include <span>
+#include <stdexcept>
 #include <bit>
 
 class lfsr{
@@ -38,6 +40,25 @@ public:
 		if(state_ == 0) state_ = 1U;
 	}
 
+	lfsr(
+		const unsigned degree,
+		const std::span<const bool> generator_bits, const std::uint32_t seed = 0)
+		: degree_(degree), gen_(0), state_(seed){
+		for(int i = {}; i != generator_bits.size(); ++i){
+			if(generator_bits[i]){
+				if(static_cast<unsigned>(i) >= 32){
+					throw std::invalid_argument("lfsr generator bits out of u32 range");
+				}
+				gen_ |= (1U << i);
+			}
+		}
+
+		const std::uint32_t mask = (degree_ >= 32) ? (~0U) : ((1U << degree_) - 1U);
+
+		state_ &= mask;
+		// if(state_ == 0) state_ = 1U;
+	}
+
 	std::uint8_t next_bit() noexcept{
 		// 1. 获取输出位：最高位 (degree_ - 1)
 		const std::uint8_t output_bit = (state_ >> (degree_ - 1)) & 1U;
@@ -58,9 +79,19 @@ public:
 		return output_bit;
 	}
 
-	[[nodiscard]] auto get_degree() const noexcept{ return degree_; }
+	void override_state(std::uint32_t state) noexcept {
+		state_ = state;
+		const std::uint32_t mask = (degree_ >= 32) ? ~0U : ((1U << degree_) - 1U);
+		state_ &= mask;
+	}
 
-	[[nodiscard]] std::uint32_t get_state() const noexcept{ return state_; }
+	[[nodiscard]] auto get_degree() const noexcept{
+		return degree_;
+	}
+
+	[[nodiscard]] std::uint32_t get_state() const noexcept{
+		return state_;
+	}
 
 private:
 	unsigned degree_;
@@ -124,3 +155,48 @@ public:
 		return result;
 	}
 };
+class clock_controlled_generator_view{
+private:
+	lfsr* lfsr1_;
+	lfsr* lfsr2_;
+
+public:
+	[[nodiscard]] clock_controlled_generator_view() = default;
+
+	[[nodiscard]] clock_controlled_generator_view(lfsr& lfsr1, lfsr& lfsr2)
+		: lfsr1_(&lfsr1),
+		lfsr2_(&lfsr2){
+	}
+
+
+	bool next_bit() noexcept{
+		if(lfsr1_->next_bit()){
+			lfsr2_->next_bit();
+		}
+
+		return lfsr2_->get_state() & 1U;
+	}
+
+
+	[[nodiscard]] std::uint8_t next_byte() noexcept{
+		std::uint8_t byte = 0;
+		for(int i = 0; i < 8; ++i){
+			byte |= (next_bit() << i);
+		}
+		return byte;
+	}
+
+	template <std::ranges::input_range Input, typename Target = std::vector<std::uint8_t>>
+	Target xor_with(const Input& input){
+		Target result;
+		result.reserve(input.size());
+
+		for(const auto c : input){
+			result.push_back(
+				std::bit_cast<std::ranges::range_value_t<Target>>(
+					static_cast<std::uint8_t>(std::bit_cast<std::uint8_t>(c) ^ next_byte())));
+		}
+		return result;
+	}
+};
+
