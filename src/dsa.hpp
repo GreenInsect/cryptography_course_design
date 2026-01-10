@@ -280,7 +280,7 @@ public:
 	 * @param L p 的位数 (推荐 2048)
 	 * @param N q 的位数 (推荐 256)
 	 */
-	static dsa_params<IntTy> generate(int L = 512, int N = 80, int k = 40){
+	static dsa_params<IntTy> generate(int L = 1024, int N = 160, int k = 20){
 		// if(!((L == 1024 && N == 160) || (L == 2048 && N == 224) ||
 		// 	(L == 2048 && N == 256) || (L == 3072 && N == 256))){
 		// 	throw std::invalid_argument("invalid parameter");

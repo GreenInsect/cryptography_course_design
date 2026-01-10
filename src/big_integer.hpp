@@ -1441,8 +1441,8 @@ inline BigInteger random_bigint(int bits) {
     int highBits = bits % BASE_BITS;
     if (highBits == 0) highBits = BASE_BITS;
 
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
+    static thread_local std::random_device rd;
+    static thread_local std::mt19937 gen(rd());
     std::uniform_int_distribution<uint16_t> dist(0, 255); 
 
     std::vector<uint8_t> bytes(byteCount);
