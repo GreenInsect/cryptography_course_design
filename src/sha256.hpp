@@ -82,7 +82,7 @@ namespace bigint {
             std::vector<std::uint8_t> msg(data, data + length);
             std::uint64_t bit_len = length * 8;
 
-            // 填充
+            // 填充(padding)
             msg.push_back(0x80);
             while ((msg.size() + 8) % 64 != 0) msg.push_back(0x00);
 
