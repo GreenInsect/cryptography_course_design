@@ -2,7 +2,9 @@
 
 #include <iostream>
 #include <optional>
+#include <stdexcept>
 #include "crypt_concept.hpp"
+#include "big_integer.hpp"
 
 template <crypto_integer T>
 class math_utils {
@@ -225,6 +227,14 @@ private:
 
 public:
 	[[nodiscard]] dsa_signator() = default;
+
+	template <typename R>
+	dsa_signator(const dsa_algorithm<IntTy>& dsa, const dsa_key<IntTy>& key, R&& rand)
+		: rand_(std::forward<R>(rand)),
+		dsa_(dsa),
+		key_(key){
+	}
+
 	template <typename R>
 	[[nodiscard]] dsa_signator(dsa_params<IntTy> param, R&& rand)
 	: rand_(std::forward<R>(rand))
@@ -255,3 +265,71 @@ public:
 
 template <crypto_integer IntTy, std::invocable<const IntTy&, const IntTy&> Rand>
 dsa_signator(dsa_params<IntTy>, Rand&&) -> dsa_signator<IntTy, std::decay_t<Rand>>;
+
+
+template <crypto_integer IntTy, std::invocable<const IntTy&, const IntTy&> Rand>
+dsa_signator(dsa_params<IntTy>, dsa_key<IntTy>, Rand&&) -> dsa_signator<IntTy, std::decay_t<Rand>>;
+
+
+struct dsa_generator{
+	using IntTy = bigint::BigInteger;
+
+public:
+	/**
+	 * @brief 生成 DSA 参数
+	 * @param L p 的位数 (推荐 2048)
+	 * @param N q 的位数 (推荐 256)
+	 */
+	static dsa_params<IntTy> generate(int L = 1024, int N = 160, int k = 20){
+		// if(!((L == 1024 && N == 160) || (L == 2048 && N == 224) ||
+		// 	(L == 2048 && N == 256) || (L == 3072 && N == 256))){
+		// 	throw std::invalid_argument("invalid parameter");
+		// }
+
+		dsa_params<IntTy> params;
+
+		// 1. 生成 q (N bits 的素数)
+		params.q = bigint::random_prime(N, k);
+
+		// 2. 生成 p (L bits, 满足 q | p-1)
+		while(true){
+			// 随机生成 L 位的 candidate p
+			bigint::BigInteger X = bigint::random_bigint(L);
+			// 确保 p 大约是 L 位且 p = 1 (mod 2q) 以加速寻找
+			bigint::BigInteger p_candidate = X - (X % (params.q * 2)) + 1;
+
+			if(p_candidate.to_binary_string().size() < L) continue;
+
+			// 这里的 k 轮 Miller-Rabin 保证了素性
+			if(bigint::is_prime(p_candidate, k)){
+				params.p = p_candidate;
+				break;
+			}
+		}
+
+		// 3. 生成 g (生成元)
+		// g = h^((p-1)/q) mod p, 其中 1 < h < p-1 且 g > 1
+		bigint::BigInteger e = (params.p - 1) / params.q;
+		bigint::BigInteger h(2);
+		while(true){
+			params.g = bigint::BigIntegerOps::mod_pow(h, e, params.p);
+			if(params.g > bigint::BigInteger(1)){
+				break;
+			}
+			h = h + 1;
+		}
+
+		return params;
+	}
+
+	/**
+	 * @brief 验证参数是否符合 FIPS 186-4 基本数学约束
+	 */
+	static bool verify(const dsa_params<IntTy>& params){
+		if(!bigint::is_prime(params.q, 40)) return false;
+		if(!bigint::is_prime(params.p, 40)) return false;
+		if(!((params.p - 1) % params.q).is_zero()) return false;
+		if(params.g <= 1 || bigint::BigIntegerOps::mod_pow(params.g, params.q, params.p) != 1) return false;
+		return true;
+	}
+};

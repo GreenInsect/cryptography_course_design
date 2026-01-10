@@ -53,6 +53,23 @@ public:
     }
 
     std::string finalize(){
+        finalize_raw();
+
+        // 4. 生成结果字符串 (Little Endian)
+        std::stringstream result{};
+        for (const auto& val : state_) {
+            const auto v = static_cast<std::uint32_t>(val & (~0U));
+            for (int i = 0; i < 4; ++i) {
+                result << std::format("{:02x}", (v >> (i * 8)) & 0xFF);
+            }
+        }
+        
+        // 清理
+        buffer_.clear();
+        return std::move(result).str();
+    }
+
+    std::span<const T, 4> finalize_raw(){
         // 1. 填充 Padding
         // 追加一个 '1' bit (0x80)
         buffer_.push_back(0x80);
@@ -75,18 +92,7 @@ public:
             process_block(buffer_.data() + i);
         }
 
-        // 4. 生成结果字符串 (Little Endian)
-        std::stringstream result{};
-        for (const auto& val : state_) {
-            const auto v = static_cast<std::uint32_t>(val & (~0U));
-            for (int i = 0; i < 4; ++i) {
-                result << std::format("{:02x}", (v >> (i * 8)) & 0xFF);
-            }
-        }
-        
-        // 清理
-        buffer_.clear();
-        return std::move(result).str();
+        return {state_};
     }
 
 private:
