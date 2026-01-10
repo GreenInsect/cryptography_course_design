@@ -23,8 +23,8 @@ namespace bigint {
     public:
         /**
          * @brief 生成 DSA 参数
-         * @param L p 的位数 (推荐 2048)
-         * @param N q 的位数 (推荐 256)
+         * @param L p 的位数
+         * @param N q 的位数
          */
         static DSAParams generate(int L = 2048, int N = 256) {
             if (!((L == 1024 && N == 160) || (L == 2048 && N == 224) ||
@@ -38,11 +38,11 @@ namespace bigint {
             params.q = bigint::random_prime(N, 40);
 
             // 2. 生成 p (L bits, 满足 q | p-1)
-            int divisor = L / 32; // 假设底层以 32 位为单位
+            int divisor = L / 32;
             while (true) {
-                // 随机生成 L 位的 candidate p
+                // 随机生成 L 位的 p
                 BigInteger X = bigint::random_bigint(L);
-                // 确保 p 大约是 L 位且 p = 1 (mod 2q) 以加速寻找
+                // 确保 p 大约是 L 位且 p = 1 (mod 2q)
                 BigInteger p_candidate = X - (X % (params.q * 2)) + 1;
 
                 if (p_candidate.to_binary_string().size() < L) continue;

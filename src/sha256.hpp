@@ -1,7 +1,7 @@
 /**
  * @file sha256.hpp
  * @brief 基于 BigInteger 库实现的 SHA-256 算法
- * @details 实现了标准 SHA-256 (FIPS 180-4) 逻辑，支持处理 std::string 或 BigInteger 输入。
+ * @details 实现了标准 SHA-256逻辑，支持处理 std::string 或 BigInteger 输入。
  */
 
 #pragma once
@@ -82,11 +82,11 @@ namespace bigint {
             std::vector<std::uint8_t> msg(data, data + length);
             std::uint64_t bit_len = length * 8;
 
-            // 填充 (Padding)
+            // 填充
             msg.push_back(0x80);
             while ((msg.size() + 8) % 64 != 0) msg.push_back(0x00);
 
-            // 附加长度 (大端序)
+            // 附加长度
             for (int i = 7; i >= 0; --i) {
                 msg.push_back(static_cast<std::uint8_t>((bit_len >> (i * 8)) & 0xFF));
             }
@@ -108,13 +108,12 @@ namespace bigint {
         }
 
         /**
-         * @brief 直接处理 BigInteger 并返回另一个 BigInteger (用于密码学运算)
+         * @brief 直接处理 BigInteger 并返回另一个 BigInteger
          */
         BigInteger hash(const BigInteger& bi) {
             std::vector<std::uint8_t> bytes = bi.to_bytes();
-            // 您的库 mag 是小端序存储，SHA 要求字节流，这里根据需求可能需要 std::reverse
             std::vector<std::uint8_t> hashed_bytes = hash(bytes.data(), bytes.size());
-            // 将结果转换回 BigInteger (SHA 结果通常视为无符号)
+            // 将结果转换回 BigInteger
             return BigInteger(std::span{hashed_bytes.data(), hashed_bytes.size()}, false);
         }
 
